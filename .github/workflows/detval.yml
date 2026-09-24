@@ -29,9 +29,11 @@ jobs:
       - run: ruff check src tests && ruff format --check src tests
       - run: pytest -q
       - name: Cases list, and verify never executes
+        env:
+          # a dummy token so the Splunk client builds; the URL is unreachable, so every
+          # check errors on the search, but nothing is ever executed by `verify`.
+          SPLUNK_TOKEN: ci-dummy-token
         run: |
           detval list examples/cases
-          # verify against an unreachable Splunk: each case errors on the search,
-          # but nothing is ever executed. We assert the command didn't run.
           detval verify examples/cases --splunk-url http://127.0.0.1:9 -f json > out.json || true
-          python -c "import json; d=json.load(open('out.json')); assert all(c['execution']['status']=='skipped' for c in d), d"
+          python -c "import json; d=json.load(open('out.json')); assert d and all(c['execution']['status']=='skipped' for c in d), d"
