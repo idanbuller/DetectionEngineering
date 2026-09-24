@@ -1,0 +1,19 @@
+name: Audio Capture
+search: 'index=os sourcetype="linux:auditd" ((type="EXECVE" AND a0="arecord" AND a1="-vv" AND a2="-fdat") OR (type="SYSCALL" AND exe="*/ecasound" AND SYSCALL="memfd_create"))
+
+  '
+description: Detects attempts to record audio using the arecord and ecasound utilities.
+mitre:
+- T1123
+severity: low
+known_false_positives:
+- Unknown
+references:
+- https://linux.die.net/man/1/arecord
+- https://linuxconfig.org/how-to-test-microphone-with-audio-linux-sound-architecture-alsa
+- https://manpages.debian.org/unstable/ecasound/ecasound.1.en.html
+- https://ecasound.seul.org/ecasound/Documentation/examples.html#fconversions
+provenance:
+  source: sigma
+  sigma_id: a7af2487-9c2f-42e4-9bb9-ff961f0561d5
+  sigma_author: Pawel Mazur, Milad Cheraghi

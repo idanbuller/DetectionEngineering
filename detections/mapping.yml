@@ -1,0 +1,42 @@
+# Map Sigma logsources to your Splunk indexes and CIM field names.
+# This is a generic starter -- adjust indexes/sourcetypes/fields to your environment.
+defaults:
+  field_map:
+    Image: process
+    ParentImage: parent_process
+    OriginalFileName: process_name
+    CommandLine: cmdline
+    ParentCommandLine: parent_cmdline
+    User: user
+    TargetFilename: file_path
+    ComputerName: dest
+    Computer: dest
+    DestinationIp: dest_ip
+    DestinationPort: dest_port
+    SourceIp: src_ip
+    TargetObject: registry_path
+    Details: registry_value
+    QueryName: query
+    query: query
+logsources:
+  - {match: {product: windows, category: process_creation}, index: windows, sourcetype: "XmlWinEventLog", base: "EventCode=4688"}
+  - {match: {product: windows, service: sysmon}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"}
+  - {match: {product: windows, service: security}, index: windows, sourcetype: "XmlWinEventLog:Security"}
+  - {match: {product: windows, service: powershell}, index: windows, sourcetype: "XmlWinEventLog:Microsoft-Windows-PowerShell/Operational"}
+  - {match: {product: windows, service: system}, index: windows, sourcetype: "XmlWinEventLog:System"}
+  - {match: {product: windows, category: registry_set}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", base: "EventCode=13"}
+  - {match: {product: windows, category: registry_event}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"}
+  - {match: {product: windows, category: file_event}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", base: "EventCode=11"}
+  - {match: {product: windows, category: image_load}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", base: "EventCode=7"}
+  - {match: {product: windows, category: network_connection}, index: edr, sourcetype: "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", base: "EventCode=3"}
+  - {match: {product: windows}, index: windows, sourcetype: "XmlWinEventLog"}
+  - {match: {product: linux, category: process_creation}, index: os, sourcetype: linux:sysmon}
+  - {match: {product: linux, service: auditd}, index: os, sourcetype: linux:auditd}
+  - {match: {product: linux}, index: os, sourcetype: linux}
+  - {match: {product: macos, category: process_creation}, index: edr, sourcetype: "edr:process"}
+  - {match: {product: macos, category: file_event}, index: edr, sourcetype: "edr:file"}
+  - {match: {product: macos}, index: edr, sourcetype: "edr:process"}
+  - {match: {category: proxy}, index: proxy, sourcetype: proxy}
+  - {match: {category: dns}, index: dns, sourcetype: dns}
+  - {match: {category: firewall}, index: firewall, sourcetype: firewall}
+  - {match: {category: webserver}, index: web, sourcetype: access_combined}

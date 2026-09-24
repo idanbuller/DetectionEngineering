@@ -1,0 +1,7 @@
+The detections in library/ and anything produced by import.sh are derived from the
+SigmaHQ rules repository (https://github.com/SigmaHQ/sigma), converted to Splunk SPL by
+sigma2splunk. Each file records its origin under `provenance` (sigma_id, sigma_author).
+
+Sigma rules are distributed under the Detection Rule License (DRL) 1.1:
+https://github.com/SigmaHQ/Detection-Rule-License. These converted derivatives carry the
+same attribution. Review and tune each detection for your environment before deploying.

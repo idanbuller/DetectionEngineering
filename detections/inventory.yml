@@ -1,0 +1,8 @@
+# The index/sourcetype this environment collects (generic starter).
+- {index: windows}
+- {index: edr}
+- {index: os}
+- {index: proxy}
+- {index: dns}
+- {index: firewall}
+- {index: web}

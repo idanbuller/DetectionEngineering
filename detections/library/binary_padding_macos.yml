@@ -1,0 +1,18 @@
+name: Binary Padding - MacOS
+search: 'index=edr sourcetype="edr:process" ((process="*/truncate" AND cmdline="*-s +*") OR (process="*/dd" AND (cmdline="*if=/dev/zero*" OR cmdline="*if=/dev/random*" OR cmdline="*if=/dev/urandom*")))
+
+  '
+description: Adversaries may use binary padding to add junk data and change the on-disk representation of malware. This rule detect using dd and truncate to add a junk data to file.
+mitre:
+- T1027.001
+severity: high
+known_false_positives:
+- Legitimate script work
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1027.001/T1027.001.md
+- https://linux.die.net/man/1/truncate
+- https://linux.die.net/man/1/dd
+provenance:
+  source: sigma
+  sigma_id: 95361ce5-c891-4b0a-87ca-e24607884a96
+  sigma_author: Igor Fits, Mikhail Larin, oscd.community

@@ -1,0 +1,17 @@
+name: Creation Of A Local User Account
+search: 'index=edr sourcetype="edr:process" ((process="*/dscl" AND cmdline="*create*") OR (process="*/sysadminctl" AND cmdline="*addUser*"))
+
+  '
+description: Detects the creation of a new user account. Such accounts may be used for persistence that do not require persistent remote access tools to be deployed on the system.
+mitre:
+- T1136.001
+severity: low
+known_false_positives:
+- Legitimate administration activities
+references:
+- https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1136.001/T1136.001.md
+- https://ss64.com/osx/sysadminctl.html
+provenance:
+  source: sigma
+  sigma_id: 51719bf5-e4fd-4e44-8ba8-b830e7ac0731
+  sigma_author: Alejandro Ortuno, oscd.community

@@ -1,0 +1,16 @@
+name: AWL Bypass with Winrm.vbs and Malicious WsmPty.xsl/WsmTxt.xsl - File
+search: 'index=edr sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=11 ((file_path="*WsmPty.xsl" OR file_path="*WsmTxt.xsl") AND NOT (file_path="C:\\Windows\\System32\\*" OR file_path="C:\\Windows\\SysWOW64\\*"))
+
+  '
+description: Detects execution of attacker-controlled WsmPty.xsl or WsmTxt.xsl via winrm.vbs and copied cscript.exe (can be renamed)
+mitre:
+- T1216
+severity: medium
+known_false_positives:
+- Unlikely
+references:
+- https://posts.specterops.io/application-whitelisting-bypass-and-arbitrary-unsigned-code-execution-technique-in-winrm-vbs-c8c24fb40404
+provenance:
+  source: sigma
+  sigma_id: d353dac0-1b41-46c2-820c-d7d2561fc6ed
+  sigma_author: Julia Fomina, oscd.community

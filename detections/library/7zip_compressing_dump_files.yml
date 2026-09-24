@@ -1,0 +1,17 @@
+name: 7Zip Compressing Dump Files
+search: 'index=windows sourcetype="XmlWinEventLog" EventCode=4688 ((Description="*7-Zip*" OR (process="*\\7z.exe" OR process="*\\7zr.exe" OR process="*\\7za.exe") OR (process_name="7z.exe" OR process_name="7za.exe" OR process_name="7zr.exe")) AND (cmdline="*.dmp*" OR cmdline="*.dump*" OR cmdline="*.hdmp*"))
+
+  '
+description: Detects execution of 7z in order to compress a file with a ".dmp"/".dump" extension, which could be a step in a process of dump file exfiltration.
+mitre:
+- T1560.001
+severity: medium
+known_false_positives:
+- Legitimate use of 7z with a command line in which ".dmp" or ".dump" appears accidentally
+- Legitimate use of 7z to compress WER ".dmp" files for troubleshooting
+references:
+- https://thedfirreport.com/2022/09/26/bumblebee-round-two/
+provenance:
+  source: sigma
+  sigma_id: ec570e53-4c76-45a9-804d-dc3f355ff7a7
+  sigma_author: Nasreddine Bencherchali (Nextron Systems)

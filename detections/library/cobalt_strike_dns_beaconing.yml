@@ -1,0 +1,17 @@
+name: Cobalt Strike DNS Beaconing
+search: 'index=dns sourcetype="dns" ((query="aaa.stage.*" OR query="post.1*") OR query="*.stage.123456.*")
+
+  '
+description: Detects suspicious DNS queries known from Cobalt Strike beacons
+mitre:
+- T1071.004
+severity: critical
+known_false_positives:
+- Unknown
+references:
+- https://www.icebrg.io/blog/footprints-of-fin7-tracking-actor-patterns
+- https://www.sekoia.io/en/hunting-and-detecting-cobalt-strike/
+provenance:
+  source: sigma
+  sigma_id: 2975af79-28c4-4d2f-a951-9095f229df29
+  sigma_author: Florian Roth (Nextron Systems)

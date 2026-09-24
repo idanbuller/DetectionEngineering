@@ -1,0 +1,16 @@
+name: Access of Sudoers File Content
+search: 'index=os sourcetype="linux:sysmon" ((process="*/cat" OR process="*/ed" OR process="*/egrep" OR process="*/emacs" OR process="*/fgrep" OR process="*/grep" OR process="*/head" OR process="*/less" OR process="*/more" OR process="*/nano" OR process="*/tail") AND cmdline="* /etc/sudoers*")
+
+  '
+description: Detects the execution of a text-based file access or inspection utilities to read the content of /etc/sudoers in order to potentially list all users that have sudo rights.
+mitre:
+- T1592.004
+severity: medium
+known_false_positives:
+- Legitimate administration activities
+references:
+- https://github.com/sleventyeleven/linuxprivchecker/
+provenance:
+  source: sigma
+  sigma_id: 0f79c4d2-4e1f-4683-9c36-b5469a665e06
+  sigma_author: Florian Roth (Nextron Systems)

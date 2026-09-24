@@ -1,0 +1,17 @@
+name: Bitsadmin to Uncommon IP Server Address
+search: 'index=proxy sourcetype="proxy" (c-useragent="Microsoft BITS/*" AND (cs-host="*1" OR cs-host="*2" OR cs-host="*3" OR cs-host="*4" OR cs-host="*5" OR cs-host="*6" OR cs-host="*7" OR cs-host="*8" OR cs-host="*9"))
+
+  '
+description: Detects Bitsadmin connections to IP addresses instead of FQDN names
+mitre:
+- T1071.001
+- T1197
+severity: high
+known_false_positives:
+- Unknown
+references:
+- https://isc.sans.edu/diary/Microsoft+BITS+Used+to+Download+Payloads/21027
+provenance:
+  source: sigma
+  sigma_id: 8ccd35a2-1c7c-468b-b568-ac6cdf80eec3
+  sigma_author: Florian Roth (Nextron Systems)

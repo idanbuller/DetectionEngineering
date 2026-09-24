@@ -1,0 +1,16 @@
+name: A New Trust Was Created To A Domain
+search: 'index=windows sourcetype="XmlWinEventLog:Security" EventID=4706
+
+  '
+description: Addition of domains is seldom and should be verified for legitimacy.
+mitre:
+- T1098
+severity: medium
+known_false_positives:
+- Legitimate extension of domain structure
+references:
+- https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4706
+provenance:
+  source: sigma
+  sigma_id: 0255a820-e564-4e40-af2b-6ac61160335c
+  sigma_author: Thomas Patzke

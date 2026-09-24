@@ -1,0 +1,18 @@
+name: File Download Via Nscurl - MacOS
+search: 'index=edr sourcetype="edr:process" (process="*/nscurl" AND (cmdline="*--download *" OR cmdline="*--download-directory *" OR cmdline="*--output *" OR cmdline="*-dir *" OR cmdline="*-dl *" OR cmdline="*-ld*" OR cmdline="*-o *"))
+
+  '
+description: Detects the execution of the nscurl utility in order to download files.
+mitre:
+- T1105
+severity: medium
+known_false_positives:
+- Legitimate usage of nscurl by administrators and users.
+references:
+- https://www.loobins.io/binaries/nscurl/
+- https://www.agnosticdev.com/content/how-diagnose-app-transport-security-issues-using-nscurl-and-openssl
+- https://gist.github.com/nasbench/ca6ef95db04ae04ffd1e0b1ce709cadd
+provenance:
+  source: sigma
+  sigma_id: 6d8a7cf1-8085-423b-b87d-7e880faabbdf
+  sigma_author: Daniel Cortez
