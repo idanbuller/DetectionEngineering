@@ -1,0 +1,11 @@
+title: SSH Failed Logins
+tags: [attack.credential-access, attack.t1110.001]
+logsource:
+  product: linux
+  service: sshd
+detection:
+  keywords:
+    - 'Failed password'
+    - 'authentication failure'
+  condition: keywords
+level: medium

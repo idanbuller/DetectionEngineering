@@ -1,0 +1,7 @@
+title: Traffic To Suspicious CIDR
+tags: [attack.command-and-control, attack.t1071.001]
+logsource: {category: proxy}
+detection:
+  selection:
+    dst_ip|cidr: '10.0.0.0/8'
+  condition: selection

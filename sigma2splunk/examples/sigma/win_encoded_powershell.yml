@@ -1,0 +1,25 @@
+title: Encoded PowerShell Command Line
+id: 3c73d728-0c8e-4b6e-9d0a-2f0f4f9f7a11
+status: stable
+description: Detects PowerShell launched with an encoded command.
+author: Example
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains:
+      - ' -enc '
+      - ' -EncodedCommand '
+  filter:
+    ParentImage|endswith: '\explorer.exe'
+  condition: selection and not filter
+falsepositives:
+  - Admin scripts
+level: high
