@@ -1,0 +1,3 @@
+[
+  {"technique": "T1059.002", "name": "AppleScript spawning shell", "status": "pass"}
+]

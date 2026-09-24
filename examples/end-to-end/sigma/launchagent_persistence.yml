@@ -1,0 +1,18 @@
+title: LaunchAgent Plist Created In User Directory
+id: c2b6d3ef-1f2a-4b3c-8d4e-5f6071829304
+status: experimental
+description: A new LaunchAgent plist written under a user's Library, a common macOS persistence mechanism.
+references:
+  - https://attack.mitre.org/techniques/T1543/001/
+tags:
+  - attack.persistence
+  - attack.t1543.001
+logsource:
+  product: macos
+  category: file_event
+detection:
+  selection:
+    TargetFilename|contains: '/Library/LaunchAgents/'
+    TargetFilename|endswith: '.plist'
+  condition: selection
+level: medium

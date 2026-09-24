@@ -1,0 +1,4 @@
+# Data-source health for detcov. edr:file is deliberately stale to show an "at risk" tier.
+- {index: edr, sourcetype: edr:process, last_seen: 1790288889, events: 120000}
+- {index: edr, sourcetype: edr:file, last_seen: 1789424889, events: 4000}
+- {index: os, last_seen: 1790288889, events: 3000}

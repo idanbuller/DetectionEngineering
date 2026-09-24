@@ -1,0 +1,14 @@
+# Map Sigma's macOS logsources to this environment's indexes and field names.
+defaults:
+  field_map:
+    Image: process
+    ParentImage: parent_process
+    CommandLine: cmdline
+    TargetFilename: file_path
+logsources:
+  - match: {product: macos, category: process_creation}
+    index: edr
+    sourcetype: edr:process
+  - match: {product: macos, category: file_event}
+    index: edr
+    sourcetype: edr:file

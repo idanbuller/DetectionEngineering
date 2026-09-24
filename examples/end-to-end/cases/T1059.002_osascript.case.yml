@@ -1,0 +1,29 @@
+# Prove the detection fires end to end by running the technique on an authorized macOS canary.
+# Execution is gated: it runs only with `authorized: true` AND detval --allow-execution.
+technique: T1059.002
+name: AppleScript spawning shell
+tactic: execution
+description: osascript shelling out to fetch and run a payload, matching the detection under test.
+authorized: false            # set true only on a canary you own, then pass --allow-execution
+execute:
+  executor: atomic
+  # Fill in the exact Atomic Red Team test for T1059.002 you want to run on the canary.
+  # detval ships no payloads; the test lives in your Atomic Red Team install.
+  atomic_test: "AppleScript"
+  target: mac-canary-01
+expect:
+  - name: EDR sees osascript spawning a shell with network activity
+    kind: telemetry
+    search: |
+      index=edr sourcetype=edr:process
+      | search parent_process="*/osascript" (process="*/sh" OR process="*/bash" OR process="*/zsh") cmdline="*curl*"
+    match: {device: "{target}"}
+    settle: 30s
+    window: 15m
+    poll: 30s
+  - name: ES raised a notable for AppleScript execution
+    kind: notable
+    search: index=notable source="*AppleScript Executing Shell*"
+    settle: 60s
+    window: 20m
+    poll: 60s

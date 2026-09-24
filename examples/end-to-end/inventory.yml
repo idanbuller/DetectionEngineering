@@ -1,0 +1,4 @@
+# Index/sourcetype this environment actually collects (shared by sigma2splunk and detcov).
+- {index: edr, sourcetype: edr:process}
+- {index: edr, sourcetype: edr:file}
+- {index: os}

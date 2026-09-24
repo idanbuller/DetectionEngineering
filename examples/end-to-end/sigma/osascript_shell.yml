@@ -1,0 +1,32 @@
+title: AppleScript Executing Shell Command
+id: b1a5c2de-0e1f-4a2b-9c3d-4e5f60718293
+status: experimental
+description: >
+  osascript (AppleScript) spawning a shell interpreter that reaches out to the network
+  or decodes a payload. A common macOS initial-access and payload-delivery pattern.
+references:
+  - https://attack.mitre.org/techniques/T1059/002/
+author: DetectionEngineering example
+tags:
+  - attack.execution
+  - attack.t1059.002
+  - attack.t1059.004
+logsource:
+  product: macos
+  category: process_creation
+detection:
+  selection:
+    ParentImage|endswith: '/osascript'
+    Image|endswith:
+      - '/sh'
+      - '/bash'
+      - '/zsh'
+  suspicious:
+    CommandLine|contains:
+      - 'curl'
+      - 'http'
+      - 'base64'
+  condition: selection and suspicious
+falsepositives:
+  - Admin or developer automation that shells out from AppleScript
+level: high

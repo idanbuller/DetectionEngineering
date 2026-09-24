@@ -1,0 +1,11 @@
+# Unit-test the generated detection against the synthetic dataset.
+# The detection path points at what `sigma2splunk convert -o build/detections` produces.
+name: AppleScript spawning shell to fetch a payload
+detection: ../build/detections/applescript_executing_shell_command.yml
+dataset: ../dataset.yml
+sources: [edr_process]
+max_unexpected: 0
+expect:
+  - scenario: osascript_shell_download          # malicious: must fire, on the right user + host
+    match: {user: "{user.name}", device: "{user.workstation}"}
+  - scenario: dev_osascript_dialog              # benign look-alike: must NOT fire
