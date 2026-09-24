@@ -1,0 +1,37 @@
+name: spl-lint
+description: Lint Splunk SPL in detection-as-code repositories and annotate pull requests.
+branding:
+  icon: search
+  color: green
+inputs:
+  paths:
+    description: Space-separated files or directories to lint.
+    default: "."
+  fail-on:
+    description: Lowest severity that fails the step (error, warning, info, style).
+    default: warning
+  args:
+    description: Extra arguments passed to spl-lint (e.g. --ignore SPL204).
+    default: ""
+  sarif-file:
+    description: Also write SARIF to this path (for github/codeql-action/upload-sarif).
+    default: ""
+  python-version:
+    description: Python version to run spl-lint with.
+    default: "3.12"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install spl-lint
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}"
+    - name: Write SARIF
+      if: inputs.sarif-file != ''
+      shell: bash
+      run: spl-lint --format sarif --fail-on error ${{ inputs.args }} ${{ inputs.paths }} > "${{ inputs.sarif-file }}" || true
+    - name: Run spl-lint
+      shell: bash
+      run: spl-lint --format github --fail-on "${{ inputs.fail-on }}" ${{ inputs.args }} ${{ inputs.paths }}

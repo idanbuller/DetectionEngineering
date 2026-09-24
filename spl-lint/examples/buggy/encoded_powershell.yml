@@ -1,0 +1,9 @@
+name: Encoded PowerShell from Office parent
+description: Office application spawning PowerShell with an encoded command.
+search: |
+  index=edr sourcetype=edr:process
+  | spath
+  | where parent.name="winword.exe" or parent.name="excel.exe"
+  | where like(process.cmdline, "*-enc*")
+  | stats count min(_time) as firstTime by host user process.cmdline
+  | sort -count

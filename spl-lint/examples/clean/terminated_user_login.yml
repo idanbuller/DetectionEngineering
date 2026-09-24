@@ -1,0 +1,7 @@
+name: Login by terminated employee
+description: Successful authentication by an account HR marked as terminated.
+search: |
+  (index=os sourcetype=linux_secure action=success) OR (index=hr status=terminated)
+  | eval login_time=if(index="os", _time, null())
+  | stats values(src) as src max(login_time) as last_login values(status) as status by user
+  | where isnotnull(last_login) AND status="terminated" AND NOT like(user, "svc\_%")

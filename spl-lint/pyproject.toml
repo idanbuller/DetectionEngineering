@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spl-lint"
+dynamic = ["version"]
+description = "A linter for Splunk SPL: catches queries that silently return wrong results or scan too much data."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "IB" }]
+keywords = ["splunk", "spl", "linter", "detection-engineering", "siem", "security"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = ["PyYAML>=5.4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+spl-lint = "spl_lint.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/idanbuller/DetectionEngineering/tree/main/spl-lint"
+
+[tool.setuptools.dynamic]
+version = { attr = "spl_lint.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["UP006", "UP007", "UP035", "UP045"]  # keep typing.List/Optional for Python 3.9

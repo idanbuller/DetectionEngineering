@@ -1,0 +1,8 @@
+name: Login by terminated employee
+description: Successful authentication by an account HR marked as terminated.
+search: |
+  sourcetype=linux_secure action=success
+  | join user [search index=hr status=terminated | fields user]
+  | where user!="svc_*"
+  | table _time user src
+  | stats count by user src
