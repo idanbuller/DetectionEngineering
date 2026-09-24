@@ -1,0 +1,9 @@
+detection: ../detections/office_spawns_powershell.yml
+dataset: ../datasets/small_corp.yml
+sources: [edr_process]
+max_unexpected: 0
+expect:
+  - scenario: office_spawns_encoded_powershell
+    match: {user: "{user.name}", device: "{user.workstation}"}
+  - scenario: admin_runs_powershell_script   # benign: PowerShell, but from explorer with -File
+    match: {user: "{user.name}"}

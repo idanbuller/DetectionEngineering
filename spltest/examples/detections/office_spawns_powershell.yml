@@ -1,0 +1,8 @@
+name: Office application spawns encoded PowerShell
+mitre: [T1566.001, T1059.001]
+search: |
+  index=edr sourcetype=edr:process
+  | where 'parent.name' IN ("winword.exe", "excel.exe", "powerpnt.exe")
+    AND 'process.name'="powershell.exe"
+    AND match('process.cmd', "(?i)\s-(e|en|enc|enco|encod|encode|encoded|encodedcommand)\s")
+  | table _time device user parent.name process.name process.cmd

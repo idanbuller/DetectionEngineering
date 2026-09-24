@@ -1,0 +1,32 @@
+name: spltest
+
+on:
+  push:
+    branches: [main]
+    paths: ["spltest/**", "spl-lint/**", "synthlog/**", ".github/workflows/spltest.yml"]
+  pull_request:
+    paths: ["spltest/**", "spl-lint/**", "synthlog/**", ".github/workflows/spltest.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install ./spl-lint ./synthlog "./spltest[dev]" ruff
+      - working-directory: spltest
+        run: ruff check src tests && ruff format --check src tests
+      - working-directory: spltest
+        run: pytest -q
+      - name: Example tests compose
+        working-directory: spltest
+        run: for t in examples/tests/*.test.yml; do spltest compose "$t" > /dev/null; done

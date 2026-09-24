@@ -1,0 +1,9 @@
+detection: ../detections/ssh_bruteforce.yml
+dataset: ../datasets/small_corp.yml
+sources: [linux_auth]
+max_unexpected: 0
+expect:
+  - scenario: ssh_bruteforce
+    match: {src: "{attacker.ip}", user: "{user.name}"}
+  - scenario: admin_password_typos      # benign: 4 typos must stay under the threshold
+    match: {user: "{user.name}"}

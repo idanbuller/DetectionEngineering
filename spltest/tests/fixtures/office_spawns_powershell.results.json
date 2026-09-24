@@ -1,0 +1,1 @@
+{"results": [{"_time": "2026-01-05 11:00:00.000 UTC", "device": "ws-004", "parent.name": "winword.exe", "process.cmd": "powershell.exe -nop -w hidden -enc 176d9f9fc22a074bcd44263f", "process.name": "powershell.exe", "user": "adam.klein"}]}

@@ -1,0 +1,94 @@
+# A deliberately small world, so composed test searches stay short.
+seed: 11
+start: 2026-01-05T00:00:00Z
+duration: 24h
+
+entities:
+  workstation:
+    count: 8
+    fields: {name: "ws-{n:03}", ip: {ipv4: 10.20.0.0/16}}
+  user:
+    count: 8
+    fields:
+      name: "{first}.{last}"
+      department: {choice: [engineering, sales, finance, it]}
+      workstation: {entity: workstation.name}
+      workstation_ip: {entity: workstation.ip}
+  server:
+    count: 3
+    fields: {name: "srv-{n:02}"}
+
+sources:
+  linux_auth:
+    index: os
+    sourcetype: linux_secure
+    host_field: host
+    rate: 20/h
+    time: {field: ts}
+    raw: "{ts:%b %d %H:%M:%S} {host} sshd[{pid}]: {message}"
+    fields:
+      host: {entity: server.name}
+      user: {entity: user.name}
+      src: {entity: user.workstation_ip}
+      action: {choice: {success: 95, failure: 5}}
+      pid: {int: [1000, 9999]}
+      message:
+        map: action
+        values:
+          success: "Accepted publickey for {user} from {src}"
+          failure: "Failed password for {user} from {src}"
+
+  edr_process:
+    index: edr
+    sourcetype: edr:process
+    host_field: device
+    nested: true
+    rate: 60/h
+    fields:
+      device: {entity: user.workstation}
+      user: {entity: user.name}
+      process.name: {choice: {chrome.exe: 40, outlook.exe: 30, winword.exe: 20, powershell.exe: 10}}
+      process.cmd: '"C:\Program Files\{process.name}"'
+      parent.name: {choice: {explorer.exe: 90, svchost.exe: 10}}
+
+scenarios:
+  - id: ssh_bruteforce
+    mitre: T1110.001
+    at: 14h
+    bind:
+      user: {pick: random}
+      server: {pick: random}
+      attacker: {values: {ip: {ipv4: 203.0.113.0/24}}}
+    steps:
+      - {source: linux_auth, count: 10, interval: 3s, set: {src: "{attacker.ip}", action: failure}}
+      - {source: linux_auth, delay: 5s, set: {src: "{attacker.ip}", action: success}}
+
+  - id: admin_password_typos
+    label: benign
+    at: 9h
+    bind: {user: {where: {department: it}}, server: {pick: random}}
+    steps:
+      - {source: linux_auth, count: 4, interval: 6s, set: {action: failure}}
+      - {source: linux_auth, delay: 8s, set: {action: success}}
+
+  - id: office_spawns_encoded_powershell
+    mitre: [T1566.001, T1059.001]
+    at: 11h
+    bind: {user: {where: {department: [sales, finance]}}}
+    steps:
+      - source: edr_process
+        set:
+          parent.name: winword.exe
+          process.name: powershell.exe
+          process.cmd: "powershell.exe -nop -w hidden -enc {hex:24}"
+
+  - id: admin_runs_powershell_script
+    label: benign
+    at: 10h
+    bind: {user: {where: {department: it}}}
+    steps:
+      - source: edr_process
+        set:
+          parent.name: explorer.exe
+          process.name: powershell.exe
+          process.cmd: "powershell.exe -File C:\\Scripts\\inventory.ps1"

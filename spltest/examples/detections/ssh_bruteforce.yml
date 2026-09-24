@@ -1,0 +1,7 @@
+name: SSH brute force from a single source
+mitre: [T1110.001]
+search: |
+  index=os sourcetype=linux_secure "Failed password" earliest=-24h
+  | rex "Failed password for (?<user>\S+) from (?<src>\S+)"
+  | stats count min(_time) as firstTime max(_time) as lastTime by src user
+  | where count >= 8
