@@ -1,0 +1,19 @@
+technique: T1110.001
+name: SSH password brute force
+tactic: credential-access
+description: A burst of failed SSH logins from one source should trip the brute-force detection.
+authorized: true             # this case uses a command you control; still needs --allow-execution to run
+execute:
+  executor: command
+  target: canary-lin-01
+  ssh: operator@canary-lin-01
+  # Your own harness command on the canary. detval ships no attack payloads.
+  command: "/opt/purple/simulate_ssh_bruteforce.sh --attempts 20"
+expect:
+  - name: brute-force notable fired
+    kind: notable
+    search: |
+      index=notable source="*SSH Brute Force*" dest="{target}"
+    settle: 60s
+    window: 30m
+    poll: 60s

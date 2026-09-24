@@ -1,0 +1,33 @@
+# Validate that encoded PowerShell launched from Office is caught end to end.
+technique: T1059.001
+name: Encoded PowerShell from Office
+tactic: execution
+description: >
+  Confirms EDR telemetry captures the process and that the ES detection raises a
+  notable. Execution references Atomic Red Team test 3c73d728 (payload lives in
+  the Atomic Red Team repo you install on the canary; nothing offensive is stored here).
+authorized: false            # set true on your own authorized canary before running with --allow-execution
+execute:
+  executor: atomic
+  atomic_guid: 3c73d728-0c8e-4b6e-9d0a-2f0f4f9f7a11
+  target: canary-01
+  input_args:
+    command_to_encode: "Start-Process calc.exe"
+expect:
+  - name: EDR captured encoded PowerShell
+    kind: telemetry
+    search: |
+      index=edr sourcetype=edr:process
+      | spath
+      | search process_name=powershell.exe cmdline="*-enc*"
+    match: {dest: "{target}"}
+    settle: 30s
+    window: 15m
+    poll: 30s
+  - name: ES raised a notable
+    kind: notable
+    search: |
+      index=notable source="*Encoded PowerShell*"
+    settle: 60s
+    window: 20m
+    poll: 60s
