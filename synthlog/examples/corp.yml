@@ -1,0 +1,135 @@
+# A small company: Linux servers with sshd logs, and workstations with an EDR agent.
+# Try:  synthlog preview examples/corp.yml
+#       synthlog generate examples/corp.yml -o out/
+seed: 42
+start: 2026-01-05T00:00:00Z   # a Monday
+duration: 24h
+
+entities:
+  workstation:
+    count: 60
+    fields:
+      name: "ws-{n:04}"
+      ip: {ipv4: 10.20.0.0/16}
+  user:
+    count: 60
+    skew: 1.1                 # a handful of users generate most of the activity
+    fields:
+      name: "{first}.{last}"
+      department: {choice: {engineering: 45, sales: 25, finance: 15, it: 15}}
+      workstation: {entity: workstation.name}      # each user has a home machine
+      workstation_ip: {entity: workstation.ip}     # (same pick as the line above)
+  server:
+    count: 12
+    fields:
+      name: "srv-{word}-{n:02}"
+      ip: {ipv4: 10.10.0.0/24}
+
+sources:
+  linux_auth:
+    index: os
+    sourcetype: linux_secure
+    rate: 120/h
+    host_field: host
+    time: {field: timestamp, format: iso}
+    raw: "{timestamp:%b %d %H:%M:%S} {host} sshd[{pid}]: {message}"
+    fields:
+      host: {entity: server.name}
+      user: {entity: user.name}
+      src_ip: {entity: user.workstation_ip}
+      action: {choice: {success: 96, failure: 4}}
+      pid: {int: [1000, 65000]}
+      port: {int: [32768, 60999]}
+      message:
+        map: action
+        values:
+          success: "Accepted publickey for {user} from {src_ip} port {port} ssh2"
+          failure: "Failed password for {user} from {src_ip} port {port} ssh2"
+
+  edr_process:
+    index: edr
+    sourcetype: edr:process
+    rate: 900/h
+    host_field: device.name
+    nested: true
+    time: {field: timestamp, format: iso_ms}
+    fields:
+      event_id: {uuid: true}
+      device.name: {entity: user.workstation}
+      device.ip: {entity: user.workstation_ip}
+      user.name: {entity: user.name}
+      process.name: {choice: {chrome.exe: 30, outlook.exe: 15, teams.exe: 15, code.exe: 10, explorer.exe: 10, winword.exe: 8, excel.exe: 7, powershell.exe: 3, cmd.exe: 2}}
+      process.pid: {int: [1000, 40000]}
+      process.command_line: '"C:\Program Files\{process.name}"'
+      parent.name: {choice: {explorer.exe: 80, services.exe: 10, svchost.exe: 10}}
+      process.integrity: {choice: {medium: 90, high: 9, system: 1}}
+
+scenarios:
+  # An outside attacker guesses a password, gets in, and starts looking around
+  # from the compromised user's workstation. Spans both sources.
+  - id: ssh_bruteforce_then_discovery
+    label: malicious
+    description: Password guessing from the internet, a successful login, then discovery commands.
+    mitre: [T1110.001, T1087.001, T1033]
+    at: 14h
+    # Binding a role pins every {entity: <role>.*} field to one instance for the
+    # whole scenario: the same victim, server and workstation in every event.
+    bind:
+      user: {where: {department: engineering}}
+      server: {pick: random}
+      attacker: {values: {ip: {ipv4: 203.0.113.0/24}}}   # an ad hoc entity outside the pools
+    steps:
+      - source: linux_auth
+        count: 40
+        interval: 3s
+        jitter: 1s
+        set: {src_ip: "{attacker.ip}", action: failure}
+      - source: linux_auth
+        delay: 4s
+        set:
+          src_ip: "{attacker.ip}"
+          action: success
+          message: "Accepted password for {user} from {src_ip} port {port} ssh2"
+      - source: edr_process
+        delay: 3m
+        count: 3
+        interval: 20s
+        set:
+          parent.name: cmd.exe
+          process.name: {choice: [whoami.exe, net.exe, nltest.exe]}
+          process.command_line: {map: process.name, values: {whoami.exe: "whoami /all", net.exe: "net group \"Domain Admins\" /domain", nltest.exe: "nltest /dclist:"}}
+
+  # A macro in a document launches encoded PowerShell.
+  - id: office_encoded_powershell
+    label: malicious
+    description: winword.exe spawns powershell.exe with an encoded command.
+    mitre: [T1566.001, T1059.001]
+    at: random
+    bind:
+      user: {where: {department: [sales, finance]}}
+    steps:
+      - source: edr_process
+        set:
+          parent.name: winword.exe
+          process.name: powershell.exe
+          process.integrity: medium
+          process.command_line: "powershell.exe -nop -w hidden -enc {hex:64}"
+
+  # A hard negative: an admin mistypes a password a few times, then gets in.
+  # A brute-force detection that fires on this is too sensitive.
+  - id: admin_password_typos
+    label: benign
+    description: An IT admin fails to log in four times, then succeeds, from their usual workstation.
+    at: 9h30m
+    bind:
+      user: {where: {department: it}}
+      server: {pick: random}
+    steps:
+      - source: linux_auth
+        count: 4
+        interval: 8s
+        jitter: 3s
+        set: {action: failure}
+      - source: linux_auth
+        delay: 10s
+        set: {action: success}

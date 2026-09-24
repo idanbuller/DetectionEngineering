@@ -1,0 +1,36 @@
+name: synthlog
+
+on:
+  push:
+    branches: [main]
+    paths: ["synthlog/**", ".github/workflows/synthlog.yml"]
+  pull_request:
+    paths: ["synthlog/**", ".github/workflows/synthlog.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: synthlog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e ".[dev]" ruff
+      - run: ruff check src tests && ruff format --check src tests
+      - run: pytest -q
+      - name: Example spec validates and generates deterministically
+        run: |
+          synthlog validate examples/corp.yml
+          synthlog generate examples/corp.yml -o /tmp/a 2>/dev/null
+          synthlog generate examples/corp.yml -o /tmp/b 2>/dev/null
+          diff -r /tmp/a /tmp/b
