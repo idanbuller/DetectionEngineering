@@ -1,0 +1,5 @@
+name: LSASS memory dump
+mitre: [T1003.001]
+search: |
+  index=edr sourcetype=edr:process
+  | search process_name=procdump.exe cmdline="*lsass*"

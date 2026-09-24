@@ -1,0 +1,5 @@
+name: SSH brute force
+mitre: [T1110.001]
+search: |
+  index=os sourcetype=linux_secure "Failed password"
+  | stats count by src | where count >= 8

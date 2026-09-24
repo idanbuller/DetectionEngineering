@@ -1,0 +1,5 @@
+[
+  {"index": "edr", "sourcetype": "edr:process", "last_seen": 1790285585, "events": 120000},
+  {"index": "os", "sourcetype": "linux_secure", "last_seen": 1790285585, "events": 4000},
+  {"index": "proxy", "sourcetype": "proxy:web", "last_seen": 1789421585, "events": 900000}
+]

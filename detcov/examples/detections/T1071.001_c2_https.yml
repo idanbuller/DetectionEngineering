@@ -1,0 +1,5 @@
+name: C2 beacon over HTTPS
+mitre: [T1071.001]
+search: |
+  index=proxy sourcetype=proxy:web
+  | stats count by src dest | where count > 1000

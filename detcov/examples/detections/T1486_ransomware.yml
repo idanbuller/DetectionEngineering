@@ -1,0 +1,6 @@
+name: Ransomware mass file rename
+mitre: [T1486]
+# index comes from a macro, so detcov can't resolve the data source from SPL
+search: |
+  `edr_index` sourcetype=edr:file
+  | stats dc(file_name) as files by user | where files > 500

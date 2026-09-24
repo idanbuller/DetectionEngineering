@@ -1,0 +1,4 @@
+[
+  {"technique": "T1059.001", "status": "pass"},
+  {"technique": "T1110.001", "status": "fail"}
+]
