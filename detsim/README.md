@@ -54,6 +54,23 @@ in Splunk to confirm the logic fires:
 For a **manual** one, the guide names the technique, links its Atomic Red Team test and ATT&CK
 page, and tells you to run it on a canary and confirm with [detval](../detval/).
 
+## Mapping each rule to a specific Atomic Red Team GUID
+
+Pass `--atomics <path-to-atomic-red-team-clone>` and detsim maps each rule to the specific
+Atomic test(s) most likely to trip it — not just the technique folder. It scores every test in
+the rule's technique by how many of the rule's own match-literals (`nscurl`, `certutil`,
+`/priv`, …) appear in the test's name and command, weighting the name higher:
+
+```text
+$ detsim simulate detections/library --atomics ~/atomic-red-team
+hit   T1105   File Download Via Nscurl - MacOS  [atomic 5bcefe5f-... File download via nscurl]
+```
+
+The guide then gives the exact `Invoke-AtomicTest T#### -TestGuids <guid>` command and a
+ready-to-paste detval case (`execute: {executor: atomic, atomic_guid: <guid>}`), so the hit
+you simulate synthetically is the same one you validate for real. Rules with no literal overlap
+fall back to a technique-only match.
+
 ## Three ways to actually make it fire
 
 detsim's synthetic hit proves the **logic**. To exercise the **pipeline**, pick by risk:

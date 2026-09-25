@@ -12,6 +12,7 @@ import yaml
 from spl_lint.sources import read_sources
 
 from . import __version__, guide
+from .atomics import Match, literals, load_index, match
 from .predicate import PredicateError, from_spl
 from .synth import Unsatisfiable, synthesize
 
@@ -29,6 +30,7 @@ class Simulation:
     verification: Optional[str]
     reason: str
     guide: str
+    atomics: List[Match] = None
 
 
 def _techniques(path: str, content: str) -> List[str]:
@@ -55,7 +57,7 @@ def _makeresults(event: dict, search_args: List[str]) -> str:
     return f'| makeresults format=json data="{escaped}"\n| search {search}'
 
 
-def simulate_detection(path: str) -> List[Simulation]:
+def simulate_detection(path: str, atomic_index: Optional[dict] = None) -> List[Simulation]:
     with open(path, encoding="utf-8") as fh:
         content = fh.read()
     sources = read_sources(path, content, ["search", "spl", "query"])
@@ -67,11 +69,13 @@ def simulate_detection(path: str) -> List[Simulation]:
             predicate = from_spl(src.text)
             synth = synthesize(predicate)
             verification = _makeresults(synth.event, predicate.search_args)
-            g = guide.build(name, techniques, synth.event, "", verification)
-            sims.append(Simulation(name, path, techniques, "auto", synth.event, verification, "", g))
+            atomics = match(techniques, literals(predicate.ast), atomic_index) if atomic_index else []
+            g = guide.build(name, techniques, synth.event, "", verification, atomics)
+            sims.append(Simulation(name, path, techniques, "auto", synth.event, verification, "", g, atomics))
         except (PredicateError, Unsatisfiable) as exc:
-            g = guide.build(name, techniques, None, str(exc), None)
-            sims.append(Simulation(name, path, techniques, "manual", None, None, str(exc), g))
+            atomics = match(techniques, [], atomic_index) if atomic_index else []
+            g = guide.build(name, techniques, None, str(exc), None, atomics)
+            sims.append(Simulation(name, path, techniques, "manual", None, None, str(exc), g, atomics))
     return sims
 
 
@@ -105,14 +109,22 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("-f", "--format", choices=["text", "json"], default="text")
     s.add_argument("-v", "--verbose", action="store_true", help="print the hit search for each detection")
     s.add_argument("--fail-on-manual", action="store_true", help="exit 1 if any detection needs manual simulation")
+    s.add_argument("--atomics", metavar="PATH", help="an Atomic Red Team checkout, to map each rule to test GUIDs")
     return p
 
 
 def cmd_simulate(args) -> int:
+    atomic_index = None
+    if args.atomics:
+        try:
+            atomic_index = load_index(args.atomics)
+        except (OSError, FileNotFoundError) as exc:
+            sys.stderr.write(f"detsim: {exc}\n")
+            return EXIT_ERROR
     sims: List[Simulation] = []
     for path in _discover(args.paths):
         try:
-            sims.extend(simulate_detection(path))
+            sims.extend(simulate_detection(path, atomic_index))
         except OSError as exc:
             sys.stderr.write(f"detsim: {path}: {exc}\n")
     if not sims:
@@ -130,6 +142,10 @@ def cmd_simulate(args) -> int:
                     "event": s.event,
                     "verification": s.verification,
                     "reason": s.reason,
+                    "atomic_tests": [
+                        {"guid": m.test.guid, "name": m.test.name, "score": m.score, "platforms": m.test.platforms}
+                        for m in (s.atomics or [])[:3]
+                    ],
                 }
                 for s in sims
             ],
@@ -155,6 +171,9 @@ def _report_text(sims: List[Simulation], verbose: bool) -> None:
     for s in sims:
         mark = "hit " if s.status == "auto" else "MANUAL"
         line = f"{mark}  {', '.join(s.techniques) or '-':20} {s.name}"
+        if s.atomics:
+            best = s.atomics[0]
+            line += f"  [atomic {best.test.guid}]" if best.score else "  [atomic: technique-only match]"
         sys.stdout.write(line + ("" if s.status == "auto" else f"  ({s.reason})") + "\n")
         if verbose and s.verification:
             sys.stdout.write("    " + s.verification.replace("\n", "\n    ") + "\n")

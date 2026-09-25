@@ -33,7 +33,12 @@ def _recipe(event: Dict[str, object]) -> List[str]:
 
 
 def build(
-    name: str, techniques: List[str], event: Optional[Dict[str, object]], reason: str, verification: Optional[str]
+    name: str,
+    techniques: List[str],
+    event: Optional[Dict[str, object]],
+    reason: str,
+    verification: Optional[str],
+    atomics: Optional[List] = None,
 ) -> str:
     out = [f"# Simulating: {name}", ""]
     if techniques:
@@ -41,6 +46,24 @@ def build(
         for t in techniques:
             out.append(f"- {t} — Atomic Red Team: {atomic_url(t)} · ATT&CK: {attack_url(t)}")
         out.append("")
+    if atomics:
+        out.append("**Matched Atomic Red Team tests** (best match first):")
+        for m in atomics[:3]:
+            plat = ", ".join(m.test.platforms) if m.test.platforms else "?"
+            fit = f"{m.score} literal(s) matched" if m.score else "technique-only match"
+            out.append(f"- `{m.test.guid}` — {m.test.name} [{plat}] ({fit})")
+        top = atomics[0]
+        out += [
+            "",
+            "Run the best match on a canary, then confirm with detval:",
+            "",
+            "```",
+            f"{top.test.command()}",
+            "```",
+            "",
+            f"Or as a detval case: `execute: {{executor: atomic, atomic_guid: {top.test.guid}}}`",
+            "",
+        ]
     if event is not None:
         out.append("## Synthetic hit (no execution)")
         out += _recipe(event)
