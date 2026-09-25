@@ -97,6 +97,37 @@ serves both tools:
 
 A plain list of index names, or a `{"index::sourcetype": {...}}` mapping, also works.
 
+## Dotted JSON sources (SentinelOne, etc.)
+
+Some sources store events as nested JSON where a field like `tgt.process.image.path` can't be
+matched directly — it has to be pulled out with `spath` first. Add an `extract:` table to the
+mapping (alias → dotted path) and sigma2splunk emits the `| spath` stages automatically, for
+exactly the fields each rule uses:
+
+```yaml
+defaults:
+  field_map: {Image: process, CommandLine: cmdline, ParentImage: parent_process}
+  extract:
+    process: tgt.process.image.path
+    cmdline: tgt.process.cmdline
+    parent_process: src.process.image.path
+logsources:
+  - {match: {product: windows, category: process_creation}, index: edr, sourcetype: "sentinelone:process"}
+```
+
+A converted rule then looks like:
+
+```spl
+index=edr sourcetype="sentinelone:process"
+| spath input=_raw path=tgt.process.cmdline output=cmdline
+| spath input=_raw path=tgt.process.image.path output=process
+| search ((process="*\certutil.exe") AND cmdline="*http*")
+```
+
+so it runs on the raw JSON with no hand-editing. `extract:` stacks like `field_map` (defaults,
+then the matching logsource), and a field a rule uses that has no extract path is reported as a
+note.
+
 ## What translates
 
 Supported: field matches with `contains` / `startswith` / `endswith`, value lists (OR, or AND

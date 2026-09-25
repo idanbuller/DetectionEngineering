@@ -115,3 +115,58 @@ def test_no_index_notes_and_still_renders():
 def test_base_filter_included():
     out, _ = spl(body("sel: {a: 1}\ncondition: sel"), resolved=Resolved("edr", "st", "EventCode=1", {}))
     assert out == 'index=edr sourcetype="st" EventCode=1 a=1'
+
+
+def test_spath_extraction_mode():
+    import yaml as _yaml
+
+    from sigma2splunk.mapping import Resolved
+    from sigma2splunk.render import render_spl
+    from sigma2splunk.sigma import parse_rule
+
+    rule = parse_rule(
+        "r.yml",
+        _yaml.safe_load(
+            "title: R\nlogsource: {product: windows, category: process_creation}\n"
+            "detection:\n  sel:\n    Image|endswith: '\\\\certutil.exe'\n"
+            "    CommandLine|contains: http\n  condition: sel\n"
+        ),
+    )
+    resolved = Resolved(
+        index="edr",
+        sourcetype="sentinelone:process",
+        base=None,
+        field_map={"Image": "process", "CommandLine": "cmdline", "User": "user"},
+        extract={"process": "tgt.process.image.path", "cmdline": "tgt.process.cmdline", "user": "tgt.process.user"},
+    )
+    spl, notes = render_spl(rule, Mapping(), resolved)
+    lines = spl.splitlines()
+    assert lines[0] == 'index=edr sourcetype="sentinelone:process"'
+    # only the fields the rule uses are extracted (process, cmdline) -- not user
+    assert "| spath input=_raw path=tgt.process.image.path output=process" in lines
+    assert "| spath input=_raw path=tgt.process.cmdline output=cmdline" in lines
+    assert not any("tgt.process.user" in line for line in lines)
+    assert lines[-1].startswith("| search (") and 'process="*\\\\certutil.exe"' in lines[-1]
+
+
+def test_spath_note_for_field_without_extract_path():
+    import yaml as _yaml
+
+    from sigma2splunk.mapping import Resolved
+    from sigma2splunk.render import render_spl
+    from sigma2splunk.sigma import parse_rule
+
+    rule = parse_rule(
+        "r.yml",
+        _yaml.safe_load(
+            "title: R\nlogsource: {product: windows, category: process_creation}\n"
+            "detection:\n  sel: {Image|endswith: '\\\\x.exe'}\n  condition: sel\n"
+        ),
+    )
+    resolved = Resolved(
+        "edr", "sentinelone:process", None, {"Image": "process"}, extract={"cmdline": "tgt.process.cmdline"}
+    )
+    spl, notes = render_spl(rule, Mapping(), resolved)
+    # process is used but has no extract path -> a note, and no spath stages
+    assert any("no extract path for 'process'" in n for n in notes)
+    assert "| spath" not in spl

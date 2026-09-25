@@ -34,11 +34,17 @@ class Resolved:
     sourcetype: Optional[str]
     base: Optional[str]
     field_map: Dict[str, str]
+    extract: Dict[str, str] = None  # alias -> dotted JSON path; when set, emit `| spath` stages
+
+    def __post_init__(self):
+        if self.extract is None:
+            self.extract = {}
 
 
 @dataclass
 class Mapping:
     default_field_map: Dict[str, str] = field(default_factory=dict)
+    default_extract: Dict[str, str] = field(default_factory=dict)
     logsources: List[dict] = field(default_factory=list)
 
     def resolve(self, ls: LogSource) -> Resolved:
@@ -51,10 +57,12 @@ class Mapping:
                 if score > best_score:
                     best, best_score = entry, score
         field_map = dict(self.default_field_map)
+        extract = dict(self.default_extract)
         if best:
             field_map.update(best.get("field_map") or {})
-            return Resolved(best.get("index"), best.get("sourcetype"), best.get("base"), field_map)
-        return Resolved(None, None, None, field_map)
+            extract.update(best.get("extract") or {})
+            return Resolved(best.get("index"), best.get("sourcetype"), best.get("base"), field_map, extract)
+        return Resolved(None, None, None, field_map, extract)
 
     def map_field(self, name: str, resolved: Resolved) -> str:
         return resolved.field_map.get(name, name)
@@ -67,11 +75,17 @@ def load_mapping(path: Optional[str]) -> Mapping:
         data = yaml.safe_load(fh) or {}
     if not isinstance(data, dict):
         raise ValueError(f"{path}: mapping must be a mapping at the top level")
-    defaults = (data.get("defaults") or {}).get("field_map") or {}
+    defaults_block = data.get("defaults") or {}
+    defaults = defaults_block.get("field_map") or {}
+    default_extract = defaults_block.get("extract") or {}
     logsources = data.get("logsources") or []
     if not isinstance(logsources, list):
         raise ValueError(f"{path}: logsources must be a list")
-    return Mapping({str(k): str(v) for k, v in defaults.items()}, logsources)
+    return Mapping(
+        {str(k): str(v) for k, v in defaults.items()},
+        {str(k): str(v) for k, v in default_extract.items()},
+        logsources,
+    )
 
 
 def default_mapping() -> Mapping:

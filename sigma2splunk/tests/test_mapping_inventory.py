@@ -70,3 +70,29 @@ def test_inventory_mapping_form(tmp_path):
     inv = load_inventory(str(p))
     assert inv.available("edr", "sysmon") and inv.available("os", None)
     assert not inv.available("dns", None)
+
+
+def test_mapping_loads_extract(tmp_path):
+    import yaml as _yaml
+
+    from sigma2splunk.mapping import load_mapping
+    from sigma2splunk.sigma import LogSource
+
+    p = tmp_path / "m.yml"
+    p.write_text(
+        _yaml.safe_dump(
+            {
+                "defaults": {"extract": {"user": "tgt.process.user"}},
+                "logsources": [
+                    {
+                        "match": {"product": "macos"},
+                        "index": "edr",
+                        "sourcetype": "s1",
+                        "extract": {"process": "tgt.process.image.path"},
+                    }
+                ],
+            }
+        )
+    )
+    res = load_mapping(str(p)).resolve(LogSource(product="macos"))
+    assert res.extract == {"user": "tgt.process.user", "process": "tgt.process.image.path"}  # defaults + logsource

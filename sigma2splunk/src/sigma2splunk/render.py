@@ -34,6 +34,7 @@ class Renderer:
         self.mapping = mapping
         self.resolved = resolved
         self.notes: Set[str] = set()
+        self.used_fields: Set[str] = set()  # mapped field names the condition references
 
     # -- values ---------------------------------------------------------------
 
@@ -93,6 +94,7 @@ class Renderer:
             if m in _IGNORED_MODS:
                 self.notes.add(f"ignored |{m} (Splunk search is case-insensitive)")
 
+        self.used_fields.add(field)
         numeric = next((m for m in mods if m in _NUMERIC_OPS), None)
         if numeric:
             if isinstance(value, list):
@@ -175,8 +177,19 @@ def render_spl(rule: SigmaRule, mapping: Mapping, resolved: Resolved) -> Tuple[s
     if resolved.base:
         base_terms.append(resolved.base)
     base = " ".join(base_terms)
-
     if not base:
         renderer.notes.add("no index/sourcetype mapped for this logsource; add one to your mapping")
-    spl = f"{base} {body}".strip() if base else body
+
+    # If the mapping declares an extract table (dotted JSON -> alias) and this rule uses
+    # fields that need it, emit `| spath` stages so the search runs on the raw JSON as-is.
+    stages = []
+    if resolved.extract and base:
+        for alias in sorted(f for f in renderer.used_fields if f in resolved.extract):
+            stages.append(f"| spath input=_raw path={resolved.extract[alias]} output={alias}")
+        for alias in sorted(f for f in renderer.used_fields if f not in resolved.extract):
+            renderer.notes.add(f"no extract path for '{alias}'; it won't be pulled from _raw")
+    if stages:
+        spl = base + "\n" + "\n".join(stages) + f"\n| search {body}"
+    else:
+        spl = f"{base} {body}".strip() if base else body
     return spl, sorted(renderer.notes)
