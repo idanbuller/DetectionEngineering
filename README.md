@@ -13,6 +13,10 @@ Open-source tools for detection-as-code teams, mostly Splunk-focused.
 | [detsim](detsim/) | Generates a hit for every detection: synthesizes an event that trips the rule (self-verified), or, for ones it can’t, a simulation guide pointing at the matching Atomic Red Team test. Turns "does this rule even fire?" into one command. |
 | [detcov](detcov/) | An honest ATT&CK coverage map. Combines rule presence, data-source health, and detval validation results into one Navigator layer, so a green square means detection actually works — not just that a rule exists. Surfaces rules sitting on dead data and rules that failed validation. |
 
+## Show the whole thing (POC)
+
+`./poc.sh` runs the entire pipeline as a narrated demo — Act 1 is the offline macOS walkthrough, Act 2 imports the real SigmaHQ repo at scale, lints it, and maps each rule to its Atomic Red Team GUID. Install the tools first (see the header of `poc.sh`).
+
 ## Try it end to end
 
 [`examples/end-to-end/`](examples/end-to-end/) drives all six tools on one macOS technique (osascript spawning a shell to fetch a payload). It runs offline — no Splunk needed:
